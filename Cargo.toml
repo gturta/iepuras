@@ -1,0 +1,15 @@
+[package]
+name = "iepuras"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+futures = "0.3.31"
+rabbitmq-stream-client = "0.8.0"
+tokio = "1.45.1"
+tracing = "0.1.41"
+tracing-subscriber = { version = "0.3.19", features = ["fmt", "std", "env-filter"] }
+diesel = { version = "2.2.0", features = ["mysql", "chrono"] }
+dotenvy = "0.15.7"
+chrono = "0.4.41"
+
