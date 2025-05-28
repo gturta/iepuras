@@ -1,12 +1,13 @@
+use std::future::Future;
 use tokio::sync::mpsc;
 
 pub trait Producer {
     type Item;
-    fn produce(&mut self) -> Option<Self::Item>;
+    fn produce(&mut self) -> impl Future<Output = Option<Self::Item>> + Send;
 }
 pub trait Consumer {
     type Item;
-    fn consume(&self, value: Self::Item);
+    fn consume(&self, value: Self::Item) -> impl Future<Output = ()> + Send;
 }
 
 pub struct Worker<T, P, C> {
@@ -56,7 +57,7 @@ where
         //read from communication queue
         while let Some(msg) = rx.recv().await {
             count += 1;
-            consumer.consume(msg);
+            consumer.consume(msg).await;
         }
         tracing::info!(
             "Worker {} consumer thread ending after {} messages",
@@ -68,7 +69,7 @@ where
     async fn producer_thread(id: String, mut producer: P, tx: mpsc::Sender<T>) {
         tracing::info!("Worker {} producer thread starting", id);
         let mut count: usize = 0;
-        while let Some(msg) = producer.produce() {
+        while let Some(msg) = producer.produce().await {
             tx.send(msg).await.expect(&format!(
                 "Worker {} panic: cannot write to communication queue",
                 id

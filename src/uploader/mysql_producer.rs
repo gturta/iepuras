@@ -1,12 +1,6 @@
+use super::*;
 use crate::*;
 use diesel::prelude::*;
-use std::env;
-
-#[derive(Debug)]
-pub struct Message {
-    name: String,
-    email: String,
-}
 
 pub struct MysqlProducer {
     connection: MysqlConnection,
@@ -18,7 +12,7 @@ pub struct MysqlProducer {
 impl Producer for MysqlProducer {
     type Item = Message;
 
-    fn produce(&mut self) -> Option<Self::Item> {
+    async fn produce(&mut self) -> Option<Self::Item> {
         if let Some(value) = self.next() {
             return Some(value);
         }
@@ -34,10 +28,9 @@ impl Producer for MysqlProducer {
 }
 
 impl MysqlProducer {
-    pub fn connect() -> Result<Self> {
-        let database_url = env::var("DATABASE_URL").expect("DATABASE_URL must be set");
-        let connection = MysqlConnection::establish(&database_url)
-            .unwrap_or_else(|_| panic!("Error connecting to {}", database_url));
+    pub fn connect(url: &str) -> Result<Self> {
+        let connection = MysqlConnection::establish(&url)
+            .unwrap_or_else(|_| panic!("Error connecting to {}", url));
         Ok(Self {
             connection,
             results: None,
@@ -79,14 +72,5 @@ impl MysqlProducer {
                 return Err(Error::Diesel(err));
             }
         }
-    }
-}
-
-pub struct DummyConsumer {}
-impl Consumer for DummyConsumer {
-    type Item = Message;
-
-    fn consume(&self, value: Self::Item) {
-        tracing::info!("Dummy consumer consumed: {:?}", value);
     }
 }
